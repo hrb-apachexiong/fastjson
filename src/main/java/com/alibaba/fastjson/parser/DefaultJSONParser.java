@@ -221,7 +221,7 @@ public class DefaultJSONParser extends AbstractJSONParser {
                     throw new JSONException("syntax error");
                 } else if (ch == ',') {
                     throw new JSONException("syntax error");
-                } else if ((ch >= '0' && ch <= '9') || ch == '-') {
+                } else if (!lexer.isEnabled(Feature.TryUnqotedValue) && ((ch >= '0' && ch <= '9') || ch == '-')) {
                     lexer.resetStringPosition();
                     lexer.scanNumber();
                     if (lexer.token() == JSONToken.LITERAL_INT) {
@@ -358,7 +358,7 @@ public class DefaultJSONParser extends AbstractJSONParser {
                     } else {
                         object.put(key, value);
                     }
-                } else if (ch >= '0' && ch <= '9' || ch == '-') {
+                } else if (!lexer.isEnabled(Feature.TryUnqotedValue) && (ch >= '0' && ch <= '9' || ch == '-')) {
                     lexer.scanNumber();
                     if (lexer.token() == JSONToken.LITERAL_INT) {
                         value = lexer.integerValue();
@@ -1082,6 +1082,7 @@ public class DefaultJSONParser extends AbstractJSONParser {
                 throw new JSONException("unterminated json string, pos " + lexer.getBufferPosition());
             case ERROR:
             default:
+                if (lexer.isEnabled(Feature.TryUnqotedValue)) return "";
                 throw new JSONException("syntax error, pos " + lexer.getBufferPosition());
         }
     }

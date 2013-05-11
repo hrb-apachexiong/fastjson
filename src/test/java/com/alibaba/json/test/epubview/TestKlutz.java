@@ -30,7 +30,7 @@ public class TestKlutz extends TestCase {
     @Override
     protected void setUp() throws Exception {
         InputStreamReader isr = new InputStreamReader(
-                                                      Thread.currentThread().getContextClassLoader().getResourceAsStream("epub.json"));
+               Thread.currentThread().getContextClassLoader().getResourceAsStream("epub.json"), "UTF-8");
         BufferedReader reader = new BufferedReader(isr);
         StringBuilder sb = new StringBuilder();
 

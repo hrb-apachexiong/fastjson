@@ -54,7 +54,7 @@ import com.derbysoft.spitfire.fastjson.dto.UniqueIDType;
 
 public class TestFastJson {
 
-    private static final int TIMES       = 10000;
+    private static final int TIMES       = 100;
     private static final int STAYS_COUNT = 10;
 
     public void f_testF() {

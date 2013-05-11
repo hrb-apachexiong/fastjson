@@ -15,7 +15,7 @@ import com.alibaba.json.test.codec.SimpleJsonCodec;
 public class IntObjectEncodePerformanceTest extends TestCase {
 
     private String    text;
-    private final int COUNT = 1000 * 100;
+    private final int COUNT = 100 * 100;
     private Object    object;
 
     protected void setUp() throws Exception {

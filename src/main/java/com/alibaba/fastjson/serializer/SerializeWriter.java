@@ -63,6 +63,7 @@ public final class SerializeWriter extends Writer {
         }
     }
 
+
     /**
      * Creates a new CharArrayWriter.
      */
@@ -647,7 +648,10 @@ public final class SerializeWriter extends Writer {
         }
 
         int len = text.length();
-        int newcount = count + len + 2;
+        final char firstChar = len > 0 ? text.charAt(0) : 'A';
+        boolean unquoteFiledValues = isEnabled(SerializerFeature.UnquoteFieldValues)
+                && firstChar != '[' && firstChar != '{'; // [为一个新的数组开始，{为一个新的对象开始
+        int newcount = count + len + (unquoteFiledValues ? 0 : 2);
         if (seperator != 0) {
             newcount++;
         }
@@ -656,39 +660,46 @@ public final class SerializeWriter extends Writer {
             expandCapacity(newcount);
         }
 
-        int start = count + 1;
+        int start = count + (unquoteFiledValues ? 0 : 1);
         int end = start + len;
 
-        buf[count] = '\"';
+        if (!unquoteFiledValues) buf[count] = '\"';
         text.getChars(0, len, buf, start);
 
         count = newcount;
 
-        if (isEnabled(SerializerFeature.BrowserCompatible)) {
+        boolean browserCompatible = isEnabled(SerializerFeature.BrowserCompatible);
+        if (browserCompatible || unquoteFiledValues) {
             int lastSpecialIndex = -1;
 
             for (int i = start; i < end; ++i) {
                 char ch = buf[i];
 
-                if (ch == '"' || ch == '/' || ch == '\\') {
+                if (browserCompatible && (ch == '"' || ch == '/' || ch == '\\')) {
                     lastSpecialIndex = i;
                     newcount += 1;
                     continue;
                 }
 
-                if (ch == '\b' || ch == '\f' || ch == '\n' || ch == '\r' || ch == '\t') {
+                if (browserCompatible && (ch == '\b' || ch == '\f' || ch == '\n' || ch == '\r' || ch == '\t')) {
                     lastSpecialIndex = i;
                     newcount += 1;
                     continue;
                 }
 
-                if (ch < 32) {
+                if (unquoteFiledValues && (ch == ',' || ch == '\\' || ch == ']' || ch == '}' || ch == '"')) {
+                    lastSpecialIndex = i;
+                    newcount += 1;
+                    continue;
+                }
+
+                if (browserCompatible && ch < 32) {
                     lastSpecialIndex = i;
                     newcount += 5;
                     continue;
                 }
 
-                if (ch >= 127) {
+                if (browserCompatible && ch >= 127) {
                     lastSpecialIndex = i;
                     newcount += 5;
                     continue;
@@ -703,7 +714,7 @@ public final class SerializeWriter extends Writer {
             for (int i = lastSpecialIndex; i >= start; --i) {
                 char ch = buf[i];
 
-                if (ch == '\b' || ch == '\f' || ch == '\n' || ch == '\r' || ch == '\t') {
+                if (browserCompatible && (ch == '\b' || ch == '\f' || ch == '\n' || ch == '\r' || ch == '\t')) {
                     System.arraycopy(buf, i + 1, buf, i + 2, end - i - 1);
                     buf[i] = '\\';
                     buf[i + 1] = replaceChars[(int) ch];
@@ -711,7 +722,8 @@ public final class SerializeWriter extends Writer {
                     continue;
                 }
 
-                if (ch == '"' || ch == '/' || ch == '\\') {
+                if (browserCompatible && (ch == '"' || ch == '/' || ch == '\\')
+                        || unquoteFiledValues && (ch == ',' || ch == '\\' || ch == ']' || ch == '}' || ch == '"')) {
                     System.arraycopy(buf, i + 1, buf, i + 2, end - i - 1);
                     buf[i] = '\\';
                     buf[i + 1] = ch;
@@ -719,7 +731,7 @@ public final class SerializeWriter extends Writer {
                     continue;
                 }
 
-                if (ch < 32) {
+                if (browserCompatible && ch < 32) {
                     System.arraycopy(buf, i + 1, buf, i + 6, end - i - 1);
                     buf[i] = '\\';
                     buf[i + 1] = 'u';
@@ -731,7 +743,7 @@ public final class SerializeWriter extends Writer {
                     continue;
                 }
 
-                if (ch >= 127) {
+                if (browserCompatible && ch >= 127) {
                     System.arraycopy(buf, i + 1, buf, i + 6, end - i - 1);
                     buf[i] = '\\';
                     buf[i + 1] = 'u';
@@ -744,10 +756,10 @@ public final class SerializeWriter extends Writer {
             }
 
             if (seperator != 0) {
-                buf[count - 2] = '\"';
+                if (!unquoteFiledValues) buf[count - 2] = '\"';
                 buf[count - 1] = seperator;
             } else {
-                buf[count - 1] = '\"';
+                if (!unquoteFiledValues) buf[count - 1] = '\"';
             }
 
             return;
@@ -817,10 +829,10 @@ public final class SerializeWriter extends Writer {
         }
 
         if (seperator != 0) {
-            buf[count - 2] = '\"';
+            if (!unquoteFiledValues) buf[count - 2] = '\"';
             buf[count - 1] = seperator;
         } else {
-            buf[count - 1] = '\"';
+            if (!unquoteFiledValues) buf[count - 1] = '\"';
         }
     }
 
@@ -1295,7 +1307,9 @@ public final class SerializeWriter extends Writer {
     }
 
     public void writeString(String text) {
-        if (isEnabled(SerializerFeature.UseSingleQuotes)) {
+        if (isEnabled(SerializerFeature.UnquoteFieldValues)) {
+            writeStringWithDoubleQuote(text, (char) 0);
+        } else if (isEnabled(SerializerFeature.UseSingleQuotes)) {
             writeStringWithSingleQuote(text);
         } else {
             writeStringWithDoubleQuote(text, (char) 0);

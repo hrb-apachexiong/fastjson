@@ -19,14 +19,14 @@ import com.alibaba.json.test.entity.Group;
 public class ObjectDecodePerformanceTest extends TestCase {
 
     private String    text;
-    private final int COUNT = 1000 * 100;
+    private final int COUNT = 100 * 100;
 
     protected void setUp() throws Exception {
         text = "{\"badboy\":true,\"description\":\"神棍敌人姐\",\"name\":\"校长\",\"age\":3,\"birthdate\":1293278091773,\"salary\":123456789.0123}";
 
         String resource = "json/group.json";
         InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
-        text = IOUtils.toString(is);
+        text = IOUtils.toString(is, "UTF-8");
         is.close();
     }
 

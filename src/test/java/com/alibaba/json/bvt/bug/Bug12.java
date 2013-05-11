@@ -13,9 +13,9 @@ public class Bug12 extends TestCase {
     public void test_0() throws Exception {
         String resource = "2.json";
         InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
-        String text = IOUtils.toString(is);
+        String text = IOUtils.toString(is, "UTF-8");
         is.close();
-        
+
         JSON.parse(text);
     }
 }

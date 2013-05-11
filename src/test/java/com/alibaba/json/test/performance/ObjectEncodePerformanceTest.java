@@ -19,7 +19,7 @@ import com.alibaba.json.test.entity.Group;
 
 public class ObjectEncodePerformanceTest extends TestCase {
 
-    private final int  COUNT  = 1000 * 100;
+    private final int  COUNT  = 100 * 100;
     private AtomicLong idSeed = new AtomicLong();
 
     private Object     object;

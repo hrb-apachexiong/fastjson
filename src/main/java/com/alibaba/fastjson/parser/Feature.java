@@ -77,8 +77,12 @@ public enum Feature {
     /**
      * @since 1.1.10
      */
-    InitStringFieldAsEmpty
+    InitStringFieldAsEmpty,
+
+    TryUnqotedValue
     ;
+
+
 
     private Feature(){
         mask = (1 << ordinal());

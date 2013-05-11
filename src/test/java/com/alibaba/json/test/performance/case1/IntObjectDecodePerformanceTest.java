@@ -17,7 +17,7 @@ import com.alibaba.json.test.entity.case1.LongObject_100_Entity;
 public class IntObjectDecodePerformanceTest extends TestCase {
 
     private String    text;
-    private final int COUNT = 1000 * 100;
+    private final int COUNT = 100 * 100;
 
     protected void setUp() throws Exception {
         String resource = "json/object_f_int_1000.json";

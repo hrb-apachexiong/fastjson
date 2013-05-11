@@ -10,7 +10,7 @@ import junit.framework.TestCase;
 public class OOMTest extends TestCase {
     public void test_oom() throws Exception {
         
-        for (int i = 0; i < 1000 * 1000; ++i) {
+        for (int i = 0; i < 10 * 1000; ++i) {
             String text = "{\"" + i + "\":0}";
             JSON.parse(text);
         }

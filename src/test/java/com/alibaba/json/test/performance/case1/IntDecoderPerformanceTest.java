@@ -22,7 +22,7 @@ import com.alibaba.json.test.codec.SimpleJsonCodec;
 public class IntDecoderPerformanceTest extends TestCase {
 
     private String    text;
-    private final int COUNT = 1000 * 100;
+    private final int COUNT = 100 * 100;
 
     protected void setUp() throws Exception {
         String resource;

@@ -13,7 +13,7 @@ public class SymbolTableTest extends TestCase {
             "ExecuteCount", "FetchRowCount", "File", "ID", "LastError", "LastTime", "MaxTimespan", "MaxTimespanOccurTime", "Name", "RunningCount", "SQL",
             "TotalTime"            };
     char[][]           symbols_char = new char[symbols.length][];
-    final int          COUNT        = 1000 * 1000;
+    final int          COUNT        = 10 * 100;
 
     protected void setUp() throws Exception {
         for (int i = 0; i < symbols.length; ++i) {

@@ -28,7 +28,7 @@ import com.alibaba.fastjson.parser.DefaultJSONParser;
 public class JSONParser2Test extends TestCase {
 
     private String text;
-    private int    COUNT = 1000 * 10;
+    private int    COUNT = 100 * 10;
 
     protected void setUp() throws Exception {
         // String resource = "json/Bug_0_Test.json";

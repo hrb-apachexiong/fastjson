@@ -17,7 +17,7 @@ import com.alibaba.json.test.codec.JacksonCodec;
 
 public class DecoderPerformanceTest extends TestCase {
 
-    final int      COUNT = 1000 * 100;
+    final int      COUNT = 100 * 100;
     private String text;
 
     protected void setUp() throws Exception {
@@ -34,7 +34,7 @@ public class DecoderPerformanceTest extends TestCase {
 
         String resource = "json/group.json";
         InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
-        text = IOUtils.toString(is);
+        text = IOUtils.toString(is, "UTF-8");
         is.close();
     }
 

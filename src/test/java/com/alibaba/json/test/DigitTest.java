@@ -23,7 +23,7 @@ import junit.framework.TestCase;
 public class DigitTest extends TestCase {
 
     private char[] text  = "[-5.041598256063065E-20,-7210028408342716000]".toCharArray();
-    private int    COUNT = 1000 * 1000;
+    private int    COUNT = 10 * 1000;
 
     public void test_perf() throws Exception {
         for (int i = 0; i < 50; ++i) {

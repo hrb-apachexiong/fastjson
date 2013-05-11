@@ -24,7 +24,7 @@ public class PageModelPerformanceTest extends TestCase {
 
         String resource = "json/page_model_cached.json";
         InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
-        text = IOUtils.toString(is);
+        text = IOUtils.toString(is, "UTF-8");
         is.close();
     }
 

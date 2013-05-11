@@ -200,8 +200,8 @@ public final class JSONScanner implements JSONLexer {
     }
 
     public final void skipWhitespace() {
-        for (;;) {
-            if (whitespaceFlags[ch]) {
+        for (; ch != EOI;) {
+            if (ch < whitespaceFlags.length && whitespaceFlags[ch]) {
                 ch = charAt(++bp);
                 continue;
             } else {
@@ -320,6 +320,7 @@ public final class JSONScanner implements JSONLexer {
     }
 
     public void nextToken(int expect) {
+        boolean tryUnqotedValue = isEnabled(Feature.TryUnqotedValue);
         for (;;) {
             switch (expect) {
                 case JSONToken.LBRACE:
@@ -394,7 +395,7 @@ public final class JSONScanner implements JSONLexer {
                         return;
                     }
 
-                    if (ch >= '0' && ch <= '9') {
+                    if (!tryUnqotedValue && ch >= '0' && ch <= '9') {
                         sp = 0;
                         pos = bp;
                         scanNumber();
@@ -412,7 +413,15 @@ public final class JSONScanner implements JSONLexer {
                         ch = charAt(++bp);
                         return;
                     }
+
+                    if (!isEnabled(Feature.AllowArbitraryCommas) && ch == ']') {
+                        token = JSONToken.LITERAL_STRING;
+                        sp = 0;
+                        return;
+                    }
+
                     break;
+
                 case JSONToken.LBRACKET:
                     if (ch == '[') {
                         token = JSONToken.LBRACKET;
@@ -469,6 +478,41 @@ public final class JSONScanner implements JSONLexer {
                 return;
             }
 
+            switch (ch) {
+                case '[':
+                    ch = charAt(++bp);
+                    token = LBRACKET;
+                    return;
+                case ']':
+                    ch = charAt(++bp);
+                    token = RBRACKET;
+                    return;
+                case '{':
+                    ch = charAt(++bp);
+                    token = LBRACE;
+                    return;
+                case '}':
+                    ch = charAt(++bp);
+                    token = RBRACE;
+                    return;
+            }
+
+            if (isEnabled(Feature.TryUnqotedValue)) {
+                if (bp == text.length() || ch == EOI && bp + 1 == text.length()) { // JLS
+                    if (token == EOF) {
+                        throw new JSONException("EOF error");
+                    }
+
+                    token = EOF;
+                    pos = bp = eofPos;
+                    return;
+                }
+
+                scanStringSingleQuote(false);
+                return;
+
+            }
+
             if (ch >= '0' && ch <= '9') {
                 scanNumber();
                 return;
@@ -520,22 +564,7 @@ public final class JSONScanner implements JSONLexer {
                     ch = charAt(++bp);
                     token = RPAREN;
                     return;
-                case '[':
-                    ch = charAt(++bp);
-                    token = LBRACKET;
-                    return;
-                case ']':
-                    ch = charAt(++bp);
-                    token = RBRACKET;
-                    return;
-                case '{':
-                    ch = charAt(++bp);
-                    token = LBRACE;
-                    return;
-                case '}':
-                    ch = charAt(++bp);
-                    token = RBRACE;
-                    return;
+
                 case ':':
                     ch = charAt(++bp);
                     token = COLON;
@@ -555,6 +584,7 @@ public final class JSONScanner implements JSONLexer {
 
                     return;
             }
+
         }
 
     }
@@ -562,18 +592,27 @@ public final class JSONScanner implements JSONLexer {
     boolean hasSpecial;
 
     public final void scanStringSingleQuote() {
+        scanStringSingleQuote(true);
+    }
+    public final void scanStringSingleQuote(boolean quoted) {
+        bp -= quoted ? 0 : 1;
         np = bp;
         hasSpecial = false;
         char ch;
         for (;;) {
             ch = charAt(++bp);
 
-            if (ch == '\'') {
+            if (quoted && ch == '\'') {
                 break;
             }
 
             if (ch == EOI) {
                 throw new JSONException("unclosed single-quote string");
+            }
+
+            if (ch == ',' || ch == ']' || ch == '}') {
+                --bp;
+                break;
             }
 
             if (ch == '\\') {
@@ -638,8 +677,12 @@ public final class JSONScanner implements JSONLexer {
                         putChar((char) val);
                         break;
                     default:
+                        if (!quoted) {
+                            putChar(ch);
+                            break;
+                        }
                         this.ch = ch;
-                        throw new JSONException("unclosed single-quote string");
+                        throw new JSONException("unclosed single-quote string at " + bp);
                 }
                 continue;
             }
@@ -761,7 +804,7 @@ public final class JSONScanner implements JSONLexer {
         final char first = ch;
 
         final boolean firstFlag = ch >= firstIdentifierFlags.length || firstIdentifierFlags[first];
-        if (!firstFlag) {
+        if (!firstFlag && !isEnabled(Feature.AllowUnQuotedFieldNames)) {
             throw new JSONException("illegal identifier : " + ch);
         }
 
@@ -795,7 +838,7 @@ public final class JSONScanner implements JSONLexer {
             && charAt(np + 3) == 'l') {
             return null;
         }
-        
+
         return text.substring(np, np + sp).intern();
 
 //        return symbolTable.addSymbol(buf, np, sp, hash);
@@ -1993,6 +2036,7 @@ public final class JSONScanner implements JSONLexer {
 
             isDouble = true;
         }
+
 
         if (isDouble) {
             token = JSONToken.LITERAL_FLOAT;

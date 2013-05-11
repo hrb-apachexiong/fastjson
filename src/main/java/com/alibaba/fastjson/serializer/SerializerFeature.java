@@ -103,6 +103,11 @@ public enum SerializerFeature {
      * @since 1.1.19
      */
     DisableCheckSpecialChar,
+
+    /**
+     * 字段取值不加双引号/单引号
+     */
+    UnquoteFieldValues,
     ;
 
     private SerializerFeature(){

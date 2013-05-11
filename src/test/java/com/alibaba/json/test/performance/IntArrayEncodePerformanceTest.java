@@ -21,7 +21,7 @@ public class IntArrayEncodePerformanceTest extends TestCase {
     }
 
     public void test_0() throws Exception {
-        int len = 1000 * 1000;
+        int len = 10 * 1000;
         int[] array = new int[len];
         for (int i = 0; i < len; ++i) {
             array[i] = i;

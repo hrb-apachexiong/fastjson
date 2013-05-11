@@ -321,13 +321,21 @@ public abstract class JSON implements JSONStreamAware, JSONAware {
 		return parseObject(text, clazz, new Feature[0]);
 	}
 
-	public static final JSONArray parseArray(String text) {
+	public static final JSONArray parseArray(String text, Feature... features) {
 		if (text == null) {
 			return null;
 		}
 
+        int featureValues = DEFAULT_PARSER_FEATURE;
+        for (Feature featrue : features) {
+            featureValues = Feature.config(featureValues, featrue, true);
+        }
+        return parseArray(text, featureValues);
+    }
+
+    public static final JSONArray parseArray(String text,  int featureValues) {
 		DefaultJSONParser parser = new DefaultJSONParser(text,
-				ParserConfig.getGlobalInstance());
+				ParserConfig.getGlobalInstance(), featureValues);
 
 		JSONArray array;
 

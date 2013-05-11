@@ -31,7 +31,7 @@ public class BenchmarkMain_EishayEncode {
         long startFGC = TestUtils.getFullGC();
 
         long startMillis = System.currentTimeMillis();
-        for (int i = 0; i < 1000 * 1000; ++i) {
+        for (int i = 0; i < 10 * 1000; ++i) {
             encode(obj);
         }
         long millis = System.currentTimeMillis() - startMillis;
