@@ -79,11 +79,16 @@ public class EjsonEncoderTest {
 
     @Test
     public void testBig() throws Exception {
+        File file = new File("cdr/免填单.json");
+        String s = FileUtils.readFileToString(file, "UTF-8");
+        String gzip = Gzips.gzip(s);
+        System.out.println(s.length() + " vs " + gzip.length());
+        // 1188 vs 1424
         File cdrDir = new File("cdr");
         for (File cdr : cdrDir.listFiles()) {
             if (cdr.getName().matches(".+\\.json")) {
                 System.out.println(cdr.getName());
-                compressJson(cdr, false);
+                compressJson(cdr, true);
             }
         }
     }
@@ -103,11 +108,11 @@ public class EjsonEncoderTest {
     }
 
     private void compressJson(File cdr, boolean createTempFiles) throws Exception {
+        cdr = createTempFiles ? cdr : null;
         String cdrJson = FileUtils.readFileToString(cdr, "UTF-8");
         writeFile(cdr, "_1原始_json", cdrJson);
         JSON cdrObject = new EjsonDecoder().decode(cdrJson);
 
-        cdr = createTempFiles ? cdr : null;
         String naked = new EjsonEncoder().bare().encode(cdrObject);
         writeFile(cdr, "_2裸奔_json", naked);
 
@@ -139,8 +144,10 @@ public class EjsonEncoderTest {
 
     @Test
     public void testLog() throws Exception {
-        //testBigLog("cdr/gateway.EcsSSPGTWServer_05.log.gz", "cdr/gateway_EcsSSPGTWServer_05.log");
+        // testBigLog("cdr/gateway.EcsSSPGTWServer_05.log.gz", "cdr/gateway_EcsSSPGTWServer_05.log");
         // testBigLog("cdr/gateway_EcsSSPGTWServer_01_20130501.log.gz", "cdr/gateway_EcsSSPGTWServer_01_20130501.log");
+        // testBigLog("cdr/gateway.log.EcsSSPGTWServer_02.2013-05-01.gz", "cdr/gateway_EcsSSPGTWServer_02_20130501
+        // .log");
     }
 
     private void testBigLog(String gzFileName, String baseName) throws IOException {
@@ -151,16 +158,22 @@ public class EjsonEncoderTest {
         BufferedReader reader = new BufferedReader(new InputStreamReader(gis, "UTF-8"));
         long fileStart = System.currentTimeMillis();
         int lineNo = 1;
+        int totalJsonsNum = 0;
         for(String line; (line = reader.readLine()) != null; ++lineNo) {
             long start = System.currentTimeMillis();
             System.out.print("processing " + lineNo);
             List<String> jsons = parseLine(line);
-            for (int i = 0, ii = jsons.size(); i < ii; ++i)
+            int size = jsons.size();
+            totalJsonsNum += size;
+            for (int i = 0, ii = size; i < ii; ++i)
                 prossesLineJson(file, jsons.get(i), lineNo, i + 1);
 
             System.out.println(", cost " + (System.currentTimeMillis() - start) /1000.);
         }
-        System.out.println("file cost " + (System.currentTimeMillis() - fileStart) /1000. * 60.);
+        System.out.println("file cost " + (System.currentTimeMillis() - fileStart) /1000. / 60. + "min");
+        System.out.println("total json num: " + totalJsonsNum);
+        System.out.println("process total old: " + totalOldSize / 1024. + "K , " +
+                "compact total size: " + totalCompactSize/1024. + "K");
         gis.close();
         fis.close();
     }
@@ -211,7 +224,7 @@ public class EjsonEncoderTest {
 
     private void prossesLineJson(File file, String fullJson, int lineNo, int jsonNum) {
         try {
-            if (compressJson(fullJson, null, null)) return;
+            //if (compressJson(fullJson, null, null)) return;
             if (compressJson2(fullJson)) return;
             compressJson(fullJson, file, "_" + lineNo + "_" + jsonNum + "_");
         } catch (Exception ex){
@@ -220,6 +233,9 @@ public class EjsonEncoderTest {
         }
         throw new RuntimeException("error!");
     }
+
+    private long totalOldSize = 0;
+    private long totalCompactSize = 0;
 
     private boolean compressJson(String cdrJson, File cdr, String suffix) {
         writeFile(cdr, suffix + "_1原始_json", cdrJson);
@@ -258,12 +274,15 @@ public class EjsonEncoderTest {
     }
 
     private boolean compressJson2(String cdrJson) {
+        totalOldSize += cdrJson.length();
+
         JSON cdrObject = new EjsonDecoder().decode(cdrJson);
 
         final Map<String, String> keyMapping = Maps.newHashMap();
         final Map<String, String> valueMapping = Maps.newHashMap();
         String json = new EjsonEncoder().bare().map(keyMapping, valueMapping)
                 .compact().encode(cdrObject);
+        totalCompactSize += json.length();
 
         String keyMapJson = new EjsonEncoder().bare().encode(EjsonDecoder.reverse(keyMapping));
         String valueMapJson = new EjsonEncoder().bare().encode(EjsonDecoder.reverse(valueMapping));

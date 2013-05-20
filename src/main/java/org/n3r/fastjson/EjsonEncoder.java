@@ -18,7 +18,6 @@ import java.util.TreeSet;
  * 同时，提供KEY映射/VALUE映射，以压缩JSON字符串。
  */
 public class EjsonEncoder {
-    private String sep = "^";
     private Set<SerializerFeature> features = new HashSet<SerializerFeature>();
 
     {
@@ -145,10 +144,10 @@ public class EjsonEncoder {
                 String strValue = (String) value;
                 if (getBytesLen(strValue) <= 3) return value;
 
-                String mappedValue = valueMapping.get(name + sep + strValue);
+                String mappedValue = valueMapping.get(strValue);
                 if (mappedValue != null) return mappedValue;
 
-                valueBag.add(name + sep + value);
+                valueBag.add(strValue);
 
                 return value;
             }
@@ -164,7 +163,7 @@ public class EjsonEncoder {
                         String strValue = (String) value;
                         if (getBytesLen(strValue) <= 3) return value;
 
-                        final String key = name + sep + strValue;
+                        final String key = strValue;
                         String mappedValue = valueMapping.get(key);
                         if (mappedValue != null) return '@' + mappedValue;
 

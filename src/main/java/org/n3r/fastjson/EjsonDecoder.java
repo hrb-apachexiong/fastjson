@@ -12,7 +12,6 @@ import java.util.Map;
 
 public class EjsonDecoder {
     int featureValues = JSON.DEFAULT_PARSER_FEATURE;
-    private String sep = "^";
     private Map<String, String> keyMapping;
     private Map<String, String> valueMapping;
 
@@ -172,7 +171,7 @@ public class EjsonDecoder {
                 String strValue = (String) value;
                 if (strValue.startsWith("@")) {
                     String nameValue = valueMapping.get(strValue.substring(1));
-                    value = nameValue == null ? value : StringUtils.substringAfter(nameValue, sep);
+                    value = nameValue == null ? value : nameValue;
                 }
             }
             unmapped.put(mappedKey, value);
