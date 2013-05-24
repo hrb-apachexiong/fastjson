@@ -5,10 +5,11 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.parser.Feature;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.google.common.base.Objects.firstNonNull;
 
 public class EjsonDecoder {
     int featureValues = JSON.DEFAULT_PARSER_FEATURE;
@@ -21,6 +22,13 @@ public class EjsonDecoder {
 
     private boolean uncompact;
 
+    public static <K, V> Map<V, K> reverse(Map<K, V> source) {
+        Map<V, K> reversedMap = new HashMap<V, K>(source.size());
+        for (Map.Entry<K, V> entry : source.entrySet())
+            reversedMap.put(entry.getValue(), entry.getKey());
+
+        return reversedMap;
+    }
 
     private JSONObject decodeObject(String json) {
         return (JSONObject) JSON.parse(json, featureValues);
@@ -33,13 +41,13 @@ public class EjsonDecoder {
     public <T> T decode(JSON json) {
         Object result = decodeJSON(json);
 
-        return (T) (keyMapping == null ? result : unmap(result));
+        return (T) (keyMapping == null ? result : unmap(result, false));
     }
 
     public <T> T decode(String json) {
         Object result = decodeJSON(json);
 
-        return (T) (keyMapping == null ? result : unmap(result));
+        return (T) (keyMapping == null ? result : unmap(result, false));
     }
 
     private <T> T decodeJSON(String json) {
@@ -49,12 +57,13 @@ public class EjsonDecoder {
         return (T) (uncompact ? deCompact(jsonObject) : jsonObject);
     }
 
-    private <T> T decodeJSON( JSON jsonObject ) {
+    private <T> T decodeJSON(JSON jsonObject) {
         return (T) (uncompact ? deCompact(jsonObject) : jsonObject);
     }
 
     /**
      * 在解析中支持裸奔模式。
+     *
      * @return
      */
     public EjsonDecoder unbare() {
@@ -63,8 +72,8 @@ public class EjsonDecoder {
     }
 
     private JSON deCompact(JSON object) {
-        if (object instanceof JSONObject) return  deCompact((JSONObject) object);
-         return object;
+        if (object instanceof JSONObject) return deCompact((JSONObject) object);
+        return object;
     }
 
     private JSON deCompact(JSONObject object) {
@@ -75,19 +84,11 @@ public class EjsonDecoder {
         JSONObject decompressed = new JSONObject();
         for (Map.Entry<String, Object> item : object.entrySet()) {
             Object value = item.getValue();
-            if (value instanceof JSONObject) {
-                JSONObject jsonValue = (JSONObject) value;
-                if (isCompactedArrayFormat(jsonValue)) {
-                    JSONArray array = deCompactArrayFormat(jsonValue);
-                    decompressed.put(item.getKey(), array);
-                    continue;
-                }
-                value = deCompact(jsonValue);
-            }
-            else if (value instanceof JSONArray) {
-                JSONArray arr = (JSONArray) value;
-                value = deCompact(arr);
-            }
+            if (value instanceof JSONObject)
+                value = deCompact((JSONObject) value);
+            else if (value instanceof JSONArray)
+                value = deCompact((JSONArray) value);
+
             decompressed.put(item.getKey(), value);
         }
 
@@ -96,9 +97,8 @@ public class EjsonDecoder {
 
     private JSONArray deCompact(JSONArray arr) {
         JSONArray processedArr = new JSONArray(arr.size());
-        for (Object item : arr) {
+        for (Object item : arr)
             processedArr.add(item instanceof JSON ? deCompact((JSON) item) : item);
-        }
 
         return processedArr;
     }
@@ -115,9 +115,8 @@ public class EjsonDecoder {
         for (int i = 0; i < arraySize; i++) {
             JSONObject item = new JSONObject(head.size());
             decompressJsonArray.add(item);
-            for (int j = 0, jj = head.size(); j < jj; ++j) {
+            for (int j = 0, jj = head.size(); j < jj; ++j)
                 item.put(head.getString(j), data.get(i * jj + j));
-            }
         }
 
         return decompressJsonArray;
@@ -138,24 +137,22 @@ public class EjsonDecoder {
         return this;
     }
 
-    public static <K, V> Map<V, K> reverse(Map<K, V> source) {
-        Map<V, K> reversedMap = new HashMap<V, K>(source.size());
-        for (Map.Entry<K, V> entry : source.entrySet()) {
-            reversedMap.put(entry.getValue(), entry.getKey());
-        }
-
-        return reversedMap;
-    }
-
-    private Object unmap(Object object) {
-        if (object instanceof  JSONObject)
+    private Object unmap(Object object, boolean isValueObject) {
+        if (object instanceof JSONObject)
             return unmap((JSONObject) object);
 
-        if (object instanceof  JSONArray)
+        if (object instanceof JSONArray)
             return unmap((JSONArray) object);
+
+        if (isValueObject && object instanceof String) {
+            String strValue = (String) object;
+            if (strValue.startsWith("@"))
+                return firstNonNull(valueMapping.get(strValue.substring(1)), object);
+        }
 
         return object;
     }
+
     private JSONObject unmap(JSONObject origin) {
         JSONObject unmapped = new JSONObject();
         for (Map.Entry<String, Object> item : origin.entrySet()) {
@@ -163,18 +160,7 @@ public class EjsonDecoder {
             String key = item.getKey();
             String mappedKey = keyMapping.get(key);
             mappedKey = mappedKey == null ? key : mappedKey;
-            if (value instanceof JSONObject) {
-                value = unmap((JSONObject) value);
-            } else if (value instanceof JSONArray) {
-                value = unmap((JSONArray) value);
-            } else if (value instanceof String) {
-                String strValue = (String) value;
-                if (strValue.startsWith("@")) {
-                    String nameValue = valueMapping.get(strValue.substring(1));
-                    value = nameValue == null ? value : nameValue;
-                }
-            }
-            unmapped.put(mappedKey, value);
+            unmapped.put(mappedKey, unmap(value, true));
         }
 
         return unmapped;
@@ -182,20 +168,13 @@ public class EjsonDecoder {
 
     private JSONArray unmap(JSONArray array) {
         JSONArray ummapped = new JSONArray(array.size());
-        for (int i = 0, ii = array.size(); i < ii; ++i) {
-            Object obj = array.get(i);
-            if (obj instanceof JSONObject) {
-                obj = unmap((JSONObject) obj);
-            } else if (obj instanceof JSONArray) {
-                obj = unmap((JSONArray) obj);
-            }
-            ummapped.add(obj);
-        }
+        for (int i = 0, ii = array.size(); i < ii; ++i)
+            ummapped.add(unmap(array.get(i), false));
+
         return ummapped;
     }
 
-
     public EjsonDecoder unmap(JSONObject keyMap, JSONObject valMap) {
-        return unmapKeys(keyMap).unmapValues(valMap) ;
+        return unmapKeys(keyMap).unmapValues(valMap);
     }
 }
