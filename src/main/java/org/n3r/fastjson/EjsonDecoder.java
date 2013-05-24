@@ -73,6 +73,8 @@ public class EjsonDecoder {
 
     private JSON deCompact(JSON object) {
         if (object instanceof JSONObject) return deCompact((JSONObject) object);
+        if (object instanceof JSONArray) return deCompact((JSONArray) object);
+
         return object;
     }
 
@@ -84,12 +86,8 @@ public class EjsonDecoder {
         JSONObject decompressed = new JSONObject();
         for (Map.Entry<String, Object> item : object.entrySet()) {
             Object value = item.getValue();
-            if (value instanceof JSONObject)
-                value = deCompact((JSONObject) value);
-            else if (value instanceof JSONArray)
-                value = deCompact((JSONArray) value);
 
-            decompressed.put(item.getKey(), value);
+            decompressed.put(item.getKey(), value instanceof JSON ? deCompact((JSON) value) : value);
         }
 
         return decompressed;
