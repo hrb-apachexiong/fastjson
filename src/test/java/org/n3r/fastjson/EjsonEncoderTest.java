@@ -26,7 +26,7 @@ public class EjsonEncoderTest {
         String encode1 = new EjsonEncoder().bare().encode(decode1);
         System.out.println(encode1);
 
-        String nake = "{biz_params:{busiorder:BUSI201,numinfo:[{areacode:0431,optflag:1,relanumid:862222,servicetype:02},{areacode:0431,optflag:1,relanumid:8279,servicetype:02},{optflag:1,relanumid:1868666,servicetype:01}],productid:99122,servicetype:01,usernumber:15520},pub_params:{businesscode:13021081,channelcode:111001,citycode:901,customid:57130,eoptransid:GWAY201300,nettype:02,paytype:1,provincecode:090,transid:111302},reqbusicode:cu.tran.familynumset}";
+        String nake = "{b:{busiorder:[B,U,S,I,201],numinfo:[{areacode:0431,optflag:{a:1},relanumid:862222,servicetype:02},{areacode:0431,optflag:1,relanumid:8279,servicetype:02},{areacode:0431,optflag:1,relanumid:1868666,servicetype:01}],productid:99122,servicetype:01,usernumber:15520},pub_params:{businesscode:13021081,channelcode:111001,citycode:901,customid:57130,eoptransid:GWAY201300,nettype:02,paytype:1,provincecode:090,transid:111302},reqbusicode:cu.tran.familynumset}";
         JSONObject obj = new EjsonDecoder().unbare().decode(nake);
         String encode2 = new EjsonEncoder().bare().encode(obj);
         // System.out.println(obj);
@@ -36,6 +36,7 @@ public class EjsonEncoderTest {
 
         String keyMapJson = new EjsonEncoder().bare().encode(EjsonDecoder.reverse(mapKey));
         String valueMapJson = new EjsonEncoder().bare().encode(EjsonDecoder.reverse(mapValue));
+        System.out.println("valueMapJson : " + valueMapJson);
         JSONObject keyMap = new EjsonDecoder().unbare().decode(keyMapJson);
         JSONObject valMap = new EjsonDecoder().unbare().decode(valueMapJson);
 
@@ -55,9 +56,41 @@ public class EjsonEncoderTest {
         decode = new EjsonDecoder().unbare().unmap(keyMap, valMap).uncompact().decode(encode);
         assertEquals(encode2, new EjsonEncoder().bare().encode(decode));
 
-        String jsonTest = "[2, 3Hank, 4Hill,, Peter, Griffin,]";
+        String jsonStr = "{data:[{eee:12345,fff:678},{eee:12345,fff:678,hhh:q234},{eee:12345,fff:678},{eee:12345,fff:678,hhh:q234}]}";
+        String mapkeyjson = "{}";
+        String mapvaluejson = "{0:12345}";
+        String jsonE = "{data:[{eee:@0,fff:678},{eee:@0,fff:678,hhh:q234},{eee:@0,fff:678},{eee:@0,fff:678,hhh:q234}]}";
+        JSONObject mapKeyT = new EjsonDecoder().unbare().decode(mapkeyjson);
+        JSONObject mapValueT = new EjsonDecoder().unbare().decode(mapvaluejson);
+        JSONObject jsons = new EjsonDecoder().unbare().unmap(mapKeyT, mapValueT).decode(jsonE);
+        
+        assertEquals(jsonStr, new EjsonEncoder().bare().encode(jsons));
+        
+        String jsonArr1 = "[{eee:12345,fff:678},{eee:12345,fff:678,hhh:q234}]";
+        String mapkeyArr1 = "{0:eee,1:fff,2:hhh}";
+        String mapvalueArr1 = "{0:12345}";
+        String jsonA1 = "[{0:@0,1:678},{0:@0,1:678,2:q234}]";
+        JSONObject mapKeyA1 = new EjsonDecoder().unbare().decode(mapkeyArr1);
+        JSONObject mapValueA1 = new EjsonDecoder().unbare().decode(mapvalueArr1);
+        JSONArray jsona1 = new EjsonDecoder().unbare().unmap(mapKeyA1, mapValueA1).decode(jsonA1);
+      
+        assertEquals(jsonArr1, new EjsonEncoder().bare().encode(jsona1));
+        
+        String jsonArr2 = "[[{eee:12345},{fff:678}]]";
+        String mapkeyArr2 = "{0:eee,1:fff}";
+        String mapvalueArr2 = "{0:12345}";
+        String jsonA2 = "[[{0:@0},{1:678}]]";
+        JSONObject mapKeyA2 = new EjsonDecoder().unbare().decode(mapkeyArr2);
+        JSONObject mapValueA2 = new EjsonDecoder().unbare().decode(mapvalueArr2);
+        JSONArray jsona2 = new EjsonDecoder().unbare().unmap(mapKeyA2, mapValueA2).decode(jsonA2);
+      
+        assertEquals(jsonArr2, new EjsonEncoder().bare().encode(jsona2));
+        
+        
+        
+        String jsonTest = "[{ab:2}, {bc:3Hank}, {ef:4Hill},{}, {fg:Peter}, {dd:Griffin},]";
         JSONArray objects = new EjsonDecoder().unbare().decode(jsonTest);
-        System.out.println(objects);
+        System.out.println("objects:" + objects);
         assertEquals(7, objects.size());
         String jsonOut = new EjsonEncoder().bare().encode(objects);
         System.out.println(jsonOut);
@@ -66,10 +99,16 @@ public class EjsonEncoderTest {
         JSONObject jsonObject = new EjsonDecoder().unbare().decode(json);
         String compressJson = new EjsonEncoder().bare().compact().encode(jsonObject);
 
+        String jsonarray = "[2,ewe,4rty,dthyh]";
+        JSONArray objectsarr = new EjsonDecoder().unbare().decode(jsonarray);
+        String compressJsonarray = new EjsonEncoder().bare().compact().encode(objectsarr);
+        
         String expect = "{all:5.35,record:{_d:[20130101,20130102,20130103],_h:[calldate]}}";
+        String expectT = "{all:5.35,record:{D:[20130101,20130102,20130103],E:[calldate]}}";
         assertEquals(expect, compressJson);
 
         JSONObject decompressObj = new EjsonDecoder().unbare().uncompact().decode(compressJson);
+        JSONObject decompressObjT = new EjsonDecoder().unbare().uncompact().decode(expect);
         String originJson = new EjsonEncoder().bare().encode(decompressObj);
         assertEquals(json, originJson);
 
